@@ -12,6 +12,8 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, Activation, LSTM
 
+import pickle
+
 DIR_JURE = '/media/interferon/44B681D7B681C9BE/kaggle/home-credit-default\
 -risk-data'
 def init():
@@ -103,16 +105,60 @@ def bureau_recurrent(df_app_train):
 
     print('df_joined_bureau_id.shape, after NaN row removal from STATUS', df_joined_bureau_id.shape)
 
-    # target values
-    df_y = df_joined_bureau_id['TARGET']
+    # target values (id to be removed later)
+    df_y = df_joined_bureau_id.loc[:, ['SK_ID_BUREAU', 'TARGET']]
 
     # lstm input values, need reformatting...
     df_x = df_joined_bureau_id.loc[:, ['SK_ID_BUREAU', 'STATUS']]
+
+    print('df_y.shape', df_y.shape)
+    print('df_x.shape', df_x.shape)
 
     del df_joined_bureau_id
 
     # each unique SK_ID_BUREAU presents a single sequential example of STATUS values. Desired output is TARGET for a
     # given unique SK_ID_BUREAU
+    dataset = []
+    targets = []
+
+    unique_ids = df_x['SK_ID_BUREAU'].unique()
+    counter = 0
+    length = len(unique_ids)
+    for id in unique_ids:
+        status_vals_for_current_id = df_x.loc[df_x['SK_ID_BUREAU'] == id]
+        temp = np.array([])
+        for _, status in status_vals_for_current_id.iteritems():
+            temp = np.append(temp, status)
+
+        target_val_for_current_id = df_y.loc[df_x['SK_ID_BUREAU'] == id].iloc[0].loc['TARGET']
+
+        dataset.append(temp)
+        targets.append(target_val_for_current_id)
+
+        counter += 1
+        if counter % 10000 == 0:
+            print(counter, 'of', length)
+
+    print('len(dataset)', len(dataset))
+    print('len(targets)', len(targets))
+
+    print('dataset', dataset)
+    print('targets', targets)
+
+    # Saving the objects for later use
+    with open('dataset.pickle', 'wb') as handle:
+        pickle.dump(dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open('targets.pickle', 'wb') as handle:
+        pickle.dump(targets, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open('df_x.pickle', 'wb') as handle:
+        pickle.dump(df_x, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open('df_y.pickle', 'wb') as handle:
+        pickle.dump(df_y, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    exit(0)
 
     x_train, x_test, y_train, y_test = train_test_split(df_x, df_y,
                                                         test_size=0.2, random_state=42)
