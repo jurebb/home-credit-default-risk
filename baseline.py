@@ -9,6 +9,9 @@ from sklearn.metrics import accuracy_score, f1_score, classification_report, \
 from sklearn.model_selection import train_test_split
 import numpy as np
 
+from keras.models import Sequential
+from keras.layers import Dense, Activation, LSTM
+
 DIR_JURE = '/media/interferon/44B681D7B681C9BE/kaggle/home-credit-default\
 -risk-data'
 def init():
@@ -79,21 +82,55 @@ def bureau_recurrent(df_app_train):
     df_id_y = df_app_train.loc[:, 'SK_ID_CURR':'TARGET']
 
     # df [bureau cols - target]
-    df_joined_bureau_id = df_bureau.merge(df_id_y, on='SK_ID_CURR', how='left')
+    df_bureau_id = df_bureau.merge(df_id_y, on='SK_ID_CURR', how='left')
 
     # we don't need this anymore
     del df_id_y
+    del df_app_train
+
+    # df cols:[bureau cols - target - bureau_balance cols]
+    df_joined_bureau_id = df_bureau_id.merge(df_bureau_balance, on='SK_ID_BUREAU', how='left')
+
+    del df_bureau
+    del df_bureau_id
+    del df_bureau_balance
+
+    print('df_joined_bureau_id.columns', df_joined_bureau_id.columns)
+    print('df_joined_bureau_id.shape', df_joined_bureau_id.shape)
+
+    # remove nan values from STATUS
+    df_joined_bureau_id = df_joined_bureau_id[pd.notnull(df_joined_bureau_id['STATUS'])]
+
+    print('df_joined_bureau_id.shape, after NaN row removal from STATUS', df_joined_bureau_id.shape)
 
     # target values
     df_y = df_joined_bureau_id['TARGET']
 
-    df_x = df_joined_bureau_id.loc[:, df_joined_bureau_id.columns != 'TARGET']
+    # lstm input values, need reformatting...
+    df_x = df_joined_bureau_id.loc[:, ['SK_ID_BUREAU', 'STATUS']]
+
+    del df_joined_bureau_id
+
+    # each unique SK_ID_BUREAU presents a single sequential example of STATUS values. Desired output is TARGET for a
+    # given unique SK_ID_BUREAU
 
     x_train, x_test, y_train, y_test = train_test_split(df_x, df_y,
                                                         test_size=0.2, random_state=42)
 
+    # much configuring to be done...
 
+    model = Sequential()
+    model.add(LSTM(32, input_shape=()))
+    model.add(Dense(1, activation='Sigmoid'))
 
+    model.compile(loss='binary_crossentropy',
+                  optimizer='rmsprop',
+                  metrics=['accuracy'])
+
+    model.fit(x_train, y_train, batch_size=16, epochs=10)
+    score = model.evaluate(x_test, y_test, batch_size=16)
+
+    print(score)
 
 if __name__ == "__main__":
     df_app_train, df_app_test = init()
