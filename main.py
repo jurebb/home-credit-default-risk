@@ -11,7 +11,7 @@ import numpy as np
 from sklearn import linear_model
 from sklearn import ensemble
 from sklearn import metrics
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from hyper import *
 
 DIR_JURE = 'all'
@@ -70,16 +70,29 @@ def simple_baseline(df_app_train, df_app_test):
     df_x = df_app_train.loc[:, df_app_train.columns != 'TARGET']
     df_y = df_app_train['TARGET']
 
+    nans = np.isnan(df_x)
+
+    df_x = df_x.fillna(-0.1013)
+    means = np.mean(df_x.as_matrix(), axis=0)
+
     df_x = df_x.as_matrix().astype(np.float)
     df_y = df_y.as_matrix().astype(np.float)
 
-    df_x = np.nan_to_num(df_x)  # pogledat moze li bolje
-    df_y = np.nan_to_num(df_y)  # pogledat moze li bolje
+    for i in range(df_x.shape[0]):
+        for j in range(df_x.shape[1]):
+            if df_x[i][j] == -0.1013:
+                df_x[i][j] = means[j]
+                #print('blin')
+
+    #df_x = np.nan_to_num(df_x)  # pogledat moze li bolje
+    #df_y = np.nan_to_num(df_y)  # pogledat moze li bolje
+
+    df_x = np.concatenate((df_x, nans), axis=1)
 
     x_train, x_test, y_train, y_test = train_test_split(df_x, df_y,
                                                         test_size=0.2, random_state=42)
 
-    mm_scaler = MinMaxScaler()
+    mm_scaler = StandardScaler()
     x_train = mm_scaler.fit_transform(x_train)
     x_test = mm_scaler.transform(x_test)
 
