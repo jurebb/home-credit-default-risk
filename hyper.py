@@ -75,7 +75,9 @@ def rfHyperparametars(X_train, y_train, n_estimators):
 
     algorithmParameters['criterion'] = ['gini', "entropy"]
 
-    model = ensemble.RandomForestClassifier(n_estimators=n_estimators, n_jobs=-1, class_weight='balanced')
+    algorithmParameters['class_weight'] = ['balanced', None]
+
+    model = ensemble.RandomForestClassifier(n_estimators=n_estimators, n_jobs=-1)
 
     grid = GridSearchCV(model, algorithmParameters, scoring=metrics.make_scorer(metrics.roc_auc_score, greater_is_better=True))
     grid.fit(X_train, y_train)
@@ -84,12 +86,14 @@ def rfHyperparametars(X_train, y_train, n_estimators):
     print(grid.best_estimator_.min_samples_split)
     print(grid.best_estimator_.max_features)
     print(grid.best_estimator_.criterion)
+    print(grid.best_estimator_.class_weight)
 
     classifierRF = ensemble.RandomForestClassifier(n_estimators=n_estimators,
                                                    min_samples_split=grid.best_estimator_.min_samples_split,
                                                    max_depth=grid.best_estimator_.max_depth,
                                                    max_features=grid.best_estimator_.max_features,
-                                                   criterion=grid.best_estimator_.criterion, class_weight='balanced')
+                                                   criterion=grid.best_estimator_.criterion,
+                                                   class_weight=grid.best_estimator_.class_weight)
 
     return classifierRF
 
