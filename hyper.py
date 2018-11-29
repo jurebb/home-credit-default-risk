@@ -19,10 +19,6 @@ from sklearn.svm import LinearSVC
 from sklearn.preprocessing import LabelEncoder
 
 
-# from gensim.models.word2vec import Text8Corpus
-# from gensim.models.word2vec import Word2Vec
-
-
 # funkcija koja traži najbolje hiperparametre gradient boostinga
 def gbHyperparametars(X_train, y_train):
     algorithmParameters = dict()  # dict hiperparametara koje ćemo testirati
